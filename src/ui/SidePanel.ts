@@ -11,14 +11,20 @@ export interface SidePanel {
 }
 
 export function createSidePanel(titleText: string): SidePanel {
+  // container fixed to the right
+  const container = document.createElement('div');
+  container.id = 'ui-container';
+
+  // the sliding panel
   const uiPanel = document.createElement('div');
   uiPanel.id = 'ui-panel';
 
+  // toggle button lives OUTSIDE the panel, but inside container
   const toggleBtn = document.createElement('button');
   toggleBtn.id = 'ui-toggle';
   toggleBtn.textContent = '⮜';
   toggleBtn.onclick = () => {
-    const collapsed = uiPanel.classList.toggle('collapsed');
+    const collapsed = container.classList.toggle('collapsed');
     toggleBtn.textContent = collapsed ? '⮞' : '⮜';
   };
 
@@ -28,10 +34,12 @@ export function createSidePanel(titleText: string): SidePanel {
 
   const content = document.createElement('div');
 
-  uiPanel.appendChild(toggleBtn);
   uiPanel.appendChild(title);
   uiPanel.appendChild(content);
-  document.body.appendChild(uiPanel);
+
+  container.appendChild(uiPanel);
+  container.appendChild(toggleBtn);
+  document.body.appendChild(container);
 
   function createVectorControl(label: string, colorHex: string): VectorControl {
     const block = document.createElement('div');
@@ -88,7 +96,7 @@ export function createSidePanel(titleText: string): SidePanel {
       el.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') readAndEmit();
       });
-      // prevent click on input from double-triggering outside handlers if needed
+      // don’t let clicks on inputs bubble up and accidentally change active selection
       el.addEventListener('click', (e) => e.stopPropagation());
     };
 

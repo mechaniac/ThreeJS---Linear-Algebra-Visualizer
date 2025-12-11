@@ -6,8 +6,22 @@ body {
   background: #111;
 }
 
-#ui-panel {
+/* container that anchors to the right side AND slides in/out */
+#ui-container {
   position: fixed;
+  top: 0;
+  right: 0;
+  height: 100%;
+  width: 260px; /* same as panel width */
+  z-index: 10;
+  pointer-events: none; /* children opt in */
+  transform: translateX(0);
+  transition: transform 0.2s ease-out;
+}
+
+/* the sliding panel itself */
+#ui-panel {
+  position: absolute;
   top: 0;
   right: 0;
   width: 260px;
@@ -21,19 +35,30 @@ body {
   flex-direction: column;
   padding: 8px 10px;
   box-sizing: border-box;
-  z-index: 10;
-  transform: translateX(0);
-  transition: transform 0.2s ease-out;
+  pointer-events: auto;
 }
 
-#ui-panel.collapsed {
-  transform: translateX(220px); /* keep a bit visible for toggle */
+/* when collapsed, move the whole container one full width to the right
+   -> panel goes fully off-screen, but the toggle (which sticks out to the left)
+      remains visible */
+#ui-container.collapsed {
+  transform: translateX(100%);
 }
 
+/* toggle button protrudes from the left edge of the container */
 #ui-toggle {
-  align-self: flex-start;
-  margin-bottom: 8px;
+  position: absolute;
+  top: 20px;
+  left: -28px; /* stick out from the panel edge */
+  pointer-events: auto;
   cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px 0 0 4px;
+  border: 1px solid #333;
+  border-right: none;
+  background: #222;
+  color: #f5f5f5;
+  font-size: 14px;
 }
 
 #ui-title {
