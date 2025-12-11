@@ -1,7 +1,11 @@
 // src/ui/SidePanel.ts
-export interface SidePanel {
+export interface VectorControl {
   setVector(x: number, y: number, z: number): void;
   onVectorChanged(handler: (x: number, y: number, z: number) => void): void;
+}
+
+export interface SidePanel {
+  addVectorControl(label: string, colorHex: string): VectorControl;
 }
 
 export function createSidePanel(titleText: string): SidePanel {
@@ -20,75 +24,90 @@ export function createSidePanel(titleText: string): SidePanel {
   title.id = 'ui-title';
   title.textContent = titleText;
 
-  const row = document.createElement('div');
-  row.id = 'vector-label';
-
-  const openBracket = document.createElement('span');
-  openBracket.textContent = '[ ';
-
-  const closeBracket = document.createElement('span');
-  closeBracket.textContent = ' ]';
-
-  const makeInput = () => {
-    const inp = document.createElement('input');
-    inp.type = 'number';
-    inp.step = '0.1';
-    inp.style.width = '60px';
-    inp.style.marginRight = '4px';
-    return inp;
-  };
-
-  const inputX = makeInput();
-  const inputY = makeInput();
-  const inputZ = makeInput();
-
-  row.appendChild(openBracket);
-  row.appendChild(inputX);
-  row.appendChild(inputY);
-  row.appendChild(inputZ);
-  row.appendChild(closeBracket);
+  const content = document.createElement('div');
+  // content container for all vector blocks
 
   uiPanel.appendChild(toggleBtn);
   uiPanel.appendChild(title);
-  uiPanel.appendChild(row);
+  uiPanel.appendChild(content);
   document.body.appendChild(uiPanel);
 
-  let changeHandler: ((x: number, y: number, z: number) => void) | null = null;
-  let internalUpdate = false;
+  function createVectorControl(label: string, colorHex: string): VectorControl {
+    const block = document.createElement('div');
+    block.className = 'vector-block';
+    block.style.borderLeftColor = colorHex;
 
-  function readAndEmit() {
-    if (!changeHandler || internalUpdate) return;
+    const titleRow = document.createElement('p');
+    titleRow.className = 'vector-title';
+    titleRow.innerHTML = `<span style="color:${colorHex}">${label}</span>`;
 
-    const x = parseFloat(inputX.value) || 0;
-    const y = parseFloat(inputY.value) || 0;
-    const z = parseFloat(inputZ.value) || 0;
+    const row = document.createElement('div');
+    row.className = 'vector-inputs';
 
-    changeHandler(x, y, z);
+    const openBracket = document.createElement('span');
+    openBracket.textContent = '[ ';
+
+    const closeBracket = document.createElement('span');
+    closeBracket.textContent = ' ]';
+
+    const makeInput = () => {
+      const inp = document.createElement('input');
+      inp.type = 'number';
+      inp.step = '0.1';
+      return inp;
+    };
+
+    const inputX = makeInput();
+    const inputY = makeInput();
+    const inputZ = makeInput();
+
+    row.appendChild(openBracket);
+    row.appendChild(inputX);
+    row.appendChild(inputY);
+    row.appendChild(inputZ);
+    row.appendChild(closeBracket);
+
+    block.appendChild(titleRow);
+    block.appendChild(row);
+    content.appendChild(block);
+
+    let changeHandler: ((x: number, y: number, z: number) => void) | null = null;
+    let internalUpdate = false;
+
+    function readAndEmit() {
+      if (!changeHandler || internalUpdate) return;
+      const x = parseFloat(inputX.value) || 0;
+      const y = parseFloat(inputY.value) || 0;
+      const z = parseFloat(inputZ.value) || 0;
+      changeHandler(x, y, z);
+    }
+
+    const hook = (el: HTMLInputElement) => {
+      el.addEventListener('change', readAndEmit);
+      el.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') readAndEmit();
+      });
+    };
+
+    hook(inputX);
+    hook(inputY);
+    hook(inputZ);
+
+    return {
+      setVector(x, y, z) {
+        internalUpdate = true;
+        inputX.value = x.toFixed(2);
+        inputY.value = y.toFixed(2);
+        inputZ.value = z.toFixed(2);
+        internalUpdate = false;
+      },
+      onVectorChanged(handler) {
+        changeHandler = handler;
+      },
+    };
   }
 
-  const hook = (el: HTMLInputElement) => {
-    el.addEventListener('change', readAndEmit);
-    el.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        readAndEmit();
-      }
-    });
-  };
-
-  hook(inputX);
-  hook(inputY);
-  hook(inputZ);
-
   return {
-    setVector(x: number, y: number, z: number) {
-      internalUpdate = true;
-      inputX.value = x.toFixed(2);
-      inputY.value = y.toFixed(2);
-      inputZ.value = z.toFixed(2);
-      internalUpdate = false;
-    },
-    onVectorChanged(handler) {
-      changeHandler = handler;
-    },
+    addVectorControl: createVectorControl,
   };
 }
