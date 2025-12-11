@@ -52,6 +52,12 @@ body {
   border-radius: 6px;
   background: #181818;
   border-left: 4px solid #666;
+  cursor: pointer;
+}
+
+.vector-block.active-vector {
+  background: #262626;
+  box-shadow: 0 0 0 1px #444;
 }
 
 .vector-title {
@@ -81,4 +87,5 @@ body {
   border-radius: 4px;
   padding: 2px 4px;
 }
+
 

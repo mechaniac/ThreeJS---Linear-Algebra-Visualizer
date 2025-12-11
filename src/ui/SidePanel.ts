@@ -1,7 +1,9 @@
 // src/ui/SidePanel.ts
 export interface VectorControl {
+  root: HTMLElement;
   setVector(x: number, y: number, z: number): void;
   onVectorChanged(handler: (x: number, y: number, z: number) => void): void;
+  setActive(active: boolean): void;
 }
 
 export interface SidePanel {
@@ -25,7 +27,6 @@ export function createSidePanel(titleText: string): SidePanel {
   title.textContent = titleText;
 
   const content = document.createElement('div');
-  // content container for all vector blocks
 
   uiPanel.appendChild(toggleBtn);
   uiPanel.appendChild(title);
@@ -87,6 +88,8 @@ export function createSidePanel(titleText: string): SidePanel {
       el.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') readAndEmit();
       });
+      // prevent click on input from double-triggering outside handlers if needed
+      el.addEventListener('click', (e) => e.stopPropagation());
     };
 
     hook(inputX);
@@ -94,6 +97,7 @@ export function createSidePanel(titleText: string): SidePanel {
     hook(inputZ);
 
     return {
+      root: block,
       setVector(x, y, z) {
         internalUpdate = true;
         inputX.value = x.toFixed(2);
@@ -103,6 +107,9 @@ export function createSidePanel(titleText: string): SidePanel {
       },
       onVectorChanged(handler) {
         changeHandler = handler;
+      },
+      setActive(active) {
+        block.classList.toggle('active-vector', active);
       },
     };
   }
