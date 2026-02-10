@@ -8,6 +8,13 @@ export interface VectorControl {
 
 export interface SidePanel {
   addVectorControl(label: string, colorHex: string): VectorControl;
+  // add settings panel at bottom returning controls
+  addSettingsPanel?: (settingsTitle?: string) => {
+    setValues(values: { axisThickness?: number; axisOpacity?: number; vectorThickness?: number }): void;
+    onAxisThicknessChanged(cb: (v: number) => void): void;
+    onAxisOpacityChanged(cb: (v: number) => void): void;
+    onVectorThicknessChanged(cb: (v: number) => void): void;
+  };
 }
 
 export function createSidePanel(titleText: string): SidePanel {
@@ -124,5 +131,53 @@ export function createSidePanel(titleText: string): SidePanel {
 
   return {
     addVectorControl: createVectorControl,
+    // settings panel helper (bottom of UI)
+    addSettingsPanel(settingsTitle?: string) {
+      const settings = document.createElement('div');
+      settings.id = 'settings-panel';
+      settings.className = 'settings-panel';
+
+      const h = document.createElement('h3');
+      h.textContent = settingsTitle || 'Settings';
+      settings.appendChild(h);
+
+      const makeRow = (labelText: string) => {
+        const row = document.createElement('div');
+        row.className = 'settings-row';
+        const label = document.createElement('label');
+        label.textContent = labelText;
+        const input = document.createElement('input');
+        input.type = 'number';
+        input.step = '0.01';
+        input.className = 'settings-input';
+        row.appendChild(label);
+        row.appendChild(input);
+        settings.appendChild(row);
+        return input as HTMLInputElement;
+      };
+
+      const axisThicknessInp = makeRow('Axis thickness');
+      const axisOpacityInp = makeRow('Axis opacity (0-1)');
+      const vectorThicknessInp = makeRow('Vector thickness');
+
+      // append settings to panel content
+      uiPanel.appendChild(settings);
+
+      function onChange(input: HTMLInputElement, handler: (v: number) => void) {
+        input.addEventListener('change', () => handler(parseFloat(input.value) || 0));
+        input.addEventListener('keydown', (e) => { if (e.key === 'Enter') handler(parseFloat(input.value) || 0); });
+      }
+
+      return {
+        setValues(values: { axisThickness?: number; axisOpacity?: number; vectorThickness?: number }) {
+          if (values.axisThickness !== undefined) axisThicknessInp.value = String(values.axisThickness);
+          if (values.axisOpacity !== undefined) axisOpacityInp.value = String(values.axisOpacity);
+          if (values.vectorThickness !== undefined) vectorThicknessInp.value = String(values.vectorThickness);
+        },
+        onAxisThicknessChanged(cb: (v: number) => void) { onChange(axisThicknessInp, cb); },
+        onAxisOpacityChanged(cb: (v: number) => void) { onChange(axisOpacityInp, cb); },
+        onVectorThicknessChanged(cb: (v: number) => void) { onChange(vectorThicknessInp, cb); },
+      };
+    },
   };
 }

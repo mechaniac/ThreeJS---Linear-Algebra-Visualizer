@@ -113,4 +113,29 @@ body {
   padding: 2px 4px;
 }
 
+/* settings panel at bottom */
+.settings-panel {
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px solid #2b2b2b;
+}
+.settings-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 6px 0;
+}
+.settings-row label {
+  font-size: 0.85rem;
+  color: #ddd;
+}
+.settings-input {
+  width: 90px;
+  background: #111;
+  color: #f5f5f5;
+  border: 1px solid #333;
+  border-radius: 4px;
+  padding: 2px 6px;
+}
+
 

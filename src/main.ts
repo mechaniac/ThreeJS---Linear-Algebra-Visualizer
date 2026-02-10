@@ -8,6 +8,7 @@ import { createSidePanel } from './ui/SidePanel';
 import { installVectorInteractionController } from './interactions/VectorInteractionController';
 import type { VectorEntry } from './interactions/VectorInteractionController';
 
+import type { SidePanel as SP } from './ui/SidePanel';
 
 const env = createThreeEnv();
 const { scene, controls } = env;
@@ -33,7 +34,25 @@ scene.add(v1Arrow);
 scene.add(v2Arrow);
 
 // UI
-const panel = createSidePanel('Vectors');
+const panel = createSidePanel('Vectors') as SP;
+
+// add settings (if available)
+const settingsPanel = (panel as any).addSettingsPanel && (panel as any).addSettingsPanel('Display Settings');
+
+// default display params
+const defaultAxisThickness = 0.03;
+const defaultAxisOpacity = 1.0;
+const defaultVectorThickness = 0.05;
+
+// apply defaults
+axes.setThickness(defaultAxisThickness);
+axes.setOpacity(defaultAxisOpacity);
+v1Arrow.setThickness(defaultVectorThickness);
+v2Arrow.setThickness(defaultVectorThickness);
+
+if (settingsPanel) {
+  settingsPanel.setValues({ axisThickness: defaultAxisThickness, axisOpacity: defaultAxisOpacity, vectorThickness: defaultVectorThickness });
+}
 
 const v1UI = panel.addVectorControl('v₁', v1ColorHex);
 const v2UI = panel.addVectorControl('v₂', v2ColorHex);
@@ -100,6 +119,16 @@ installVectorInteractionController(
     v.ui.setVector(vec.x, vec.y, vec.z);
   }
 );
+
+// wire settings callbacks
+if (settingsPanel) {
+  settingsPanel.onAxisThicknessChanged((v: number) => axes.setThickness(v));
+  settingsPanel.onAxisOpacityChanged((v: number) => axes.setOpacity(Math.max(0, Math.min(1, v))));
+  settingsPanel.onVectorThicknessChanged((v: number) => {
+    v1Arrow.setThickness(v);
+    v2Arrow.setThickness(v);
+  });
+}
 
 // loop
 function animate() {
