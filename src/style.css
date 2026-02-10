@@ -85,6 +85,23 @@ body {
   box-shadow: 0 0 0 1px #444;
 }
 
+/* Color result displays by vector */
+.vector-block:nth-child(1) .result-row {
+  border-left-color: #ffff00;
+}
+
+.vector-block:nth-child(1) .result-display {
+  color: #ffff00;
+}
+
+.vector-block:nth-child(2) .result-row {
+  border-left-color: #fdffbc;
+}
+
+.vector-block:nth-child(2) .result-display {
+  color: #fdffbc;
+}
+
 .vector-title {
   margin: 0 0 4px 0;
   font-size: 0.9rem;
@@ -241,21 +258,89 @@ body {
 .result-row {
   display: flex;
   align-items: center;
-  margin: 6px 0 12px 0;
-  font-size: 0.8rem;
-  padding: 4px 6px;
+  justify-content: center;
+  margin: 8px 0 12px 0;
+  padding: 8px 6px;
   background: #0a0a0a;
   border-radius: 4px;
+  border-left: 3px solid;
 }
 
-.result-row span:first-child {
-  color: #999;
-  margin-right: 4px;
+.result-row:has(.result-display) {
+  min-height: 32px;
 }
 
 .result-display {
   font-family: "Consolas", "Menlo", monospace;
-  color: #aaa;
+  font-size: 1rem;
+  font-weight: 600;
   flex: 1;
-  text-align: right;
+  text-align: center;
+}
+/* Operation panel */
+.operation-panel {
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px solid #2b2b2b;
+}
+
+.operation-panel h3 {
+  margin: 0 0 8px 0;
+  font-size: 0.95rem;
+  color: #ddd;
+}
+
+.operation-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 0;
+}
+
+.operation-row label {
+  font-size: 0.85rem;
+  color: #ddd;
+  white-space: nowrap;
+}
+
+.operation-select {
+  flex: 1;
+  padding: 4px 6px;
+  background: #111;
+  color: #f5f5f5;
+  border: 1px solid #333;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.operation-select:hover {
+  border-color: #555;
+}
+
+.operation-select:focus {
+  outline: none;
+  border-color: #888;
+  background: #1a1a1a;
+}
+
+.operation-result-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 8px 0;
+  padding: 8px 6px;
+  background: #0a0a0a;
+  border-radius: 4px;
+  border-left: 3px solid #ffb500;
+  min-height: 32px;
+}
+
+.operation-result-display {
+  font-family: "Consolas", "Menlo", monospace;
+  color: #ffb500;
+  font-size: 1rem;
+  font-weight: 600;
+  flex: 1;
+  text-align: center;
 }

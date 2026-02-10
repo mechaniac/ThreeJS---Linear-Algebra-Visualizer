@@ -5,6 +5,7 @@ import { createThreeEnv } from './core/ThreeEnv';
 import { AxisVisualizer } from './visuals/AxisVisualizer';
 import { VectorArrow } from './visuals/VectorArrow';
 import { VectorLocator } from './visuals/VectorLocator';
+import { OperationResult } from './visuals/OperationResult';
 import { createSidePanel } from './ui/SidePanel';
 import { installVectorInteractionController } from './interactions/VectorInteractionController';
 import type { VectorEntry } from './interactions/VectorInteractionController';
@@ -33,6 +34,10 @@ const v2Arrow = new VectorArrow(v2Initial, v2ColorNum);
 
 scene.add(v1Arrow);
 scene.add(v2Arrow);
+
+// Operation result display
+const operationResult = new OperationResult(0.05);
+scene.add(operationResult);
 
 // UI
 const panel = createSidePanel('Vectors') as SP;
@@ -119,6 +124,48 @@ function updateScaledVector(state: VectorState) {
   state.locator.visible = showLocator;
 }
 
+// Operation types
+const Operation = {
+  None: 0,
+  Addition: 1,
+  CrossProduct: 2,
+} as const;
+type Operation = typeof Operation[keyof typeof Operation];
+
+// Helper: compute operation result using final (scaled) vectors
+function computeOperationResult(op: Operation, v1: VectorState, v2: VectorState): THREE.Vector3 {
+  const v1Scaled = v1.inputVector.clone().multiplyScalar(v1.scalar);
+  const v2Scaled = v2.inputVector.clone().multiplyScalar(v2.scalar);
+
+  switch (op) {
+    case Operation.Addition:
+      return v1Scaled.clone().add(v2Scaled);
+    case Operation.CrossProduct:
+      return v1Scaled.clone().cross(v2Scaled);
+    case Operation.None:
+    default:
+      return new THREE.Vector3();
+  }
+}
+
+// Operation state
+let currentOperation: Operation = Operation.None;
+let opPanel: any = null;
+
+function updateOperation() {
+  const v1 = vectors.find((v) => v.id === 1);
+  const v2 = vectors.find((v) => v.id === 2);
+  if (!v1 || !v2) return;
+
+  const result = computeOperationResult(currentOperation, v1, v2);
+  operationResult.setFromVector(result);
+
+  // Update UI
+  if (opPanel) {
+    opPanel.setResult(result.x, result.y, result.z);
+  }
+}
+
 // clicking UI blocks sets active
 for (const v of vectors) {
   v.ui.root.addEventListener('click', () => {
@@ -133,6 +180,7 @@ v1UI.onVectorChanged((x, y, z) => {
   state.inputVector.set(x, y, z);
   state.locator.setPosition(x, y, z);
   updateScaledVector(state);
+  updateOperation();
 });
 
 v2UI.onVectorChanged((x, y, z) => {
@@ -141,6 +189,7 @@ v2UI.onVectorChanged((x, y, z) => {
   state.inputVector.set(x, y, z);
   state.locator.setPosition(x, y, z);
   updateScaledVector(state);
+  updateOperation();
 });
 
 // UI -> scene updates: scalar changed
@@ -149,6 +198,7 @@ v1UI.onScalarChanged((scalar: number) => {
   if (!state) return;
   state.scalar = scalar;
   updateScaledVector(state);
+  updateOperation();
 });
 
 v2UI.onScalarChanged((scalar: number) => {
@@ -156,6 +206,7 @@ v2UI.onScalarChanged((scalar: number) => {
   if (!state) return;
   state.scalar = scalar;
   updateScaledVector(state);
+  updateOperation();
 });
 
 // scene interaction: pick & drag active locator (not arrow)
@@ -178,8 +229,20 @@ installVectorInteractionController(
     state.locator.setPosition(vec.x, vec.y, vec.z);
     state.ui.setVector(vec.x, vec.y, vec.z);
     updateScaledVector(state);
+    updateOperation();
   }
 );
+
+// wire operation panel
+if ((panel as any).addOperationPanel) {
+  opPanel = (panel as any).addOperationPanel();
+  if (opPanel) {
+    opPanel.onOperationChanged((op: number) => {
+      currentOperation = op as Operation;
+      updateOperation();
+    });
+  }
+}
 
 // wire settings callbacks
 if (settingsPanel) {

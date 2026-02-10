@@ -13,8 +13,16 @@ export interface VectorControl {
   setActive(active: boolean): void;
 }
 
+export interface OperationControl {
+  root: HTMLElement;
+  setOperation(op: number): void;
+  onOperationChanged(handler: (op: number) => void): void;
+  setResult(x: number, y: number, z: number): void;
+}
+
 export interface SidePanel {
   addVectorControl(label: string, colorHex: string): VectorControl;
+  addOperationPanel?: () => OperationControl;
   // add settings panel at bottom returning controls
   addSettingsPanel?: (settingsTitle?: string) => {
     setValues(values: { axisThickness?: number; vectorThickness?: number; verticalGridEnabled?: boolean; locatorSize?: number }): void;
@@ -121,12 +129,9 @@ export function createSidePanel(titleText: string): SidePanel {
     // Result display: shows scaled vector
     const resultRow = document.createElement('div');
     resultRow.className = 'result-row';
-    const resultLabel = document.createElement('span');
-    resultLabel.textContent = 'Result: ';
     const resultDisplay = document.createElement('span');
     resultDisplay.className = 'result-display';
     resultDisplay.textContent = '[0.00 0.00 0.00]';
-    resultRow.appendChild(resultLabel);
     resultRow.appendChild(resultDisplay);
     block.appendChild(resultRow);
 
@@ -227,6 +232,74 @@ export function createSidePanel(titleText: string): SidePanel {
 
   return {
     addVectorControl: createVectorControl,
+    // operation panel helper
+    addOperationPanel() {
+      const opPanel = document.createElement('div');
+      opPanel.id = 'operation-panel';
+      opPanel.className = 'operation-panel';
+
+      const h = document.createElement('h3');
+      h.textContent = 'Operations';
+      opPanel.appendChild(h);
+
+      const opRow = document.createElement('div');
+      opRow.className = 'operation-row';
+      const opLabel = document.createElement('label');
+      opLabel.textContent = 'Function:';
+      const opSelect = document.createElement('select');
+      opSelect.className = 'operation-select';
+      
+      const operations = [
+        { value: '0', text: 'None' },
+        { value: '1', text: 'Addition' },
+        { value: '2', text: 'Cross Product' },
+      ];
+      
+      for (const op of operations) {
+        const option = document.createElement('option');
+        option.value = op.value;
+        option.textContent = op.text;
+        opSelect.appendChild(option);
+      }
+      
+      opRow.appendChild(opLabel);
+      opRow.appendChild(opSelect);
+      opPanel.appendChild(opRow);
+
+      // Result display
+      const resultRow = document.createElement('div');
+      resultRow.className = 'operation-result-row';
+      const resultDisplay = document.createElement('span');
+      resultDisplay.className = 'operation-result-display';
+      resultDisplay.textContent = '[0.00 0.00 0.00]';
+      resultRow.appendChild(resultDisplay);
+      resultRow.appendChild(resultDisplay);
+      opPanel.appendChild(resultRow);
+
+      content.appendChild(opPanel);
+
+      let opHandler: ((op: number) => void) | null = null;
+
+      return {
+        root: opPanel,
+        setOperation(op: number) {
+          opSelect.value = String(op);
+        },
+        onOperationChanged(handler: (op: number) => void) {
+          opHandler = handler;
+          opSelect.addEventListener('change', () => {
+            const op = parseInt(opSelect.value) || 0;
+            if (opHandler) opHandler(op);
+          });
+        },
+        setResult(x: number, y: number, z: number) {
+          const rx = x.toFixed(2);
+          const ry = y.toFixed(2);
+          const rz = z.toFixed(2);
+          resultDisplay.textContent = `[${rx} ${ry} ${rz}]`;
+        },
+      };
+    },
     // settings panel helper (bottom of UI)
     addSettingsPanel(settingsTitle?: string) {
       const settings = document.createElement('div');
