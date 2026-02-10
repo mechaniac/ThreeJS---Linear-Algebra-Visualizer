@@ -3,6 +3,33 @@
 ## Project Overview
 ThreeJS-based 3D linear algebra visualization tool. Displays vectors in 3D space with interactive drag-to-modify UI. Users manipulate vector components via a side panel or by dragging arrows directly in the 3D viewport.
 
+## Architectural Principles
+
+### DRY & Modularity
+- **Single Responsibility**: Each module handles one concern (e.g., `VectorArrow` renders arrows, `AxisVisualizer` manages axes and grids)
+- **Composable Design**: Visuals extend `THREE.Group`; easily combine and swap without coupling
+- **Reusable Interfaces**: Use TypeScript interfaces (`VectorControl`, `ThreeEnv`, `VectorEntry`) to decouple components and enable refactoring
+- **No Duplication**: Shared logic extracted to dedicated modules; changes propagate automatically
+
+### Functional Programming & Pure Functions
+- **Pure Functions**: Helper utilities have no side effects; they compute and return results (e.g., `normalize()`, `clamp()`)
+- **Immutability**: Avoid mutating input vectors; clone before modifying: `v.clone().multiplyScalar(s)`
+- **Composition**: Wire components via callbacks and interfaces, not direct coupling
+- **Example**: Settings callbacks compose multiple updates into a single coherent action
+
+### Separation of Concerns
+- **Visuals** (`src/visuals/`): Render primitives; geometry, materials, positioning only; no business logic
+- **UI** (`src/ui/`): Input/display layer; form controls, data binding; wires to scene via typed interfaces
+- **Interactions** (`src/interactions/`): Raycasting, drag handling; isolated from visuals and UI logic
+- **Core** (`src/core/`): Low-level Three.js setup; reusable by any module
+- **Main** (`src/main.ts`): Orchestration layer; wires modules together with clear data flow
+
+### Clear Comments
+- **Module-Level**: Concise JSDoc describing *what* the module does and *why*
+- **Function Comments**: Clarify intent for non-obvious logic; parameter and return types
+- **Inline Comments**: Explain *why* a choice was made, not *what* the code does
+- **Avoid Over-Commenting**: Self-explanatory code (good variable names, clear structure) needs no comment
+
 ## Architecture & Data Flow
 
 ### Three-Layer Structure
@@ -80,15 +107,29 @@ Use exported interfaces (`ThreeEnv`, `VectorControl`, `VectorEntry`) rather than
 
 ### Adding a New Visual
 1. Create class extending `THREE.Group` in `src/visuals/`
-2. Use Three.js primitives (Geometry + Material)
-3. Add to scene in `main.ts`: `scene.add(newVisual)`
+2. Use Three.js primitives (Geometry + Material) with clear, documented setup
+3. Add public methods for updates: `setProperty(value)`, `setVisible(boolean)`, etc.
+4. Export typed interface if used externally; no assumptions about internals
+5. Add to scene in `main.ts` and wire callbacks
+6. Keep geometry/material updates pure: accept parameters, return new state
 
 ### Adding UI Controls
-1. Extend `SidePanel.addVectorControl()` or create new method returning `VectorControl` interface
-2. Update side panel CSS in `src/style.css`
-3. Wire callbacks in `main.ts` to update arrow visuals
+1. Add control factory method to `SidePanel` returning a typed control interface
+2. Build HTML structure separately from event wiring for clarity
+3. Update CSS in `src/style.css` for layout and responsiveness
+4. Wire callbacks in `main.ts` to update visual state; keep UI layer independent
+5. Use pure callbacks: receive input, compute result, update visuals
 
 ### Modifying Interaction
 Edit [VectorInteractionController.ts](src/interactions/VectorInteractionController.ts):
-- Change `dragPlane` orientation to allow 3D dragging (currently z=0 only)
+- Change `dragPlane` orientation or constraints; isolate plane logic in a named variable
 - Modify raycaster objects list to add new draggable visuals
+- Keep callback signatures consistent; add overloads rather than breaking changes
+- Extract complex raycasting logic to helper functions for testability
+
+### Guidelines for Changes
+- **Before adding code**: Ask if logic duplicates elsewhere. Extract to shared utility if yes
+- **New callbacks**: Use arrow functions; maintain consistent handler signatures
+- **Geometry updates**: Dispose old, create new; update positions/rotations in one step
+- **Settings**: Add slider or checkbox to settings panel; wire to visual update method
+- **Testing changes**: Build and verify with `npm run dev`; check for TypeScript errors before commit

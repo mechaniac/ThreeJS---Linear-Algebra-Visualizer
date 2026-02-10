@@ -4,11 +4,9 @@ export class VectorArrow extends THREE.Group {
   private shaft: THREE.Mesh;
   private head: THREE.Mesh;
   private _vector = new THREE.Vector3();
-  private color: number;
 
   constructor(initial: THREE.Vector3, color = 0xffff00, thickness = 0.05) {
     super();
-    this.color = color;
     this._vector.copy(initial);
     const len = initial.length();
     // tip length: 6 * thickness

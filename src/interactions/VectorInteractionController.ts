@@ -1,11 +1,10 @@
 // src/interactions/VectorInteractionController.ts
 import * as THREE from 'three';
 import type { ThreeEnv } from '../core/ThreeEnv';
-import { VectorArrow } from '../visuals/VectorArrow';
 
 export interface VectorEntry {
   id: number;
-  arrow: VectorArrow;
+  arrow: THREE.Object3D; // Can be VectorArrow or VectorLocator
 }
 
 export function installVectorInteractionController(
@@ -35,7 +34,10 @@ export function installVectorInteractionController(
     const hit = new THREE.Vector3();
     if (raycaster.ray.intersectPlane(dragPlane, hit)) {
       hit.z = 0;
-      activeEntry.arrow.setFromVector(hit);
+      // Only call setFromVector if it exists (for VectorArrow, not VectorLocator)
+      if (typeof (activeEntry.arrow as any).setFromVector === 'function') {
+        (activeEntry.arrow as any).setFromVector(hit);
+      }
       onVectorChanged(activeEntry.id, hit.clone());
     }
   }

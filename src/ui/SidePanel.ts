@@ -1,8 +1,15 @@
 // src/ui/SidePanel.ts
+
+/**
+ * VectorControl: UI bindings for a single vector with scalar multiplier.
+ * Handles input vector (X,Y,Z), scalar multiplier, and displays scaled result.
+ */
 export interface VectorControl {
   root: HTMLElement;
   setVector(x: number, y: number, z: number): void;
   onVectorChanged(handler: (x: number, y: number, z: number) => void): void;
+  setScalar(value: number): void;
+  onScalarChanged(handler: (value: number) => void): void;
   setActive(active: boolean): void;
 }
 
@@ -10,10 +17,11 @@ export interface SidePanel {
   addVectorControl(label: string, colorHex: string): VectorControl;
   // add settings panel at bottom returning controls
   addSettingsPanel?: (settingsTitle?: string) => {
-    setValues(values: { axisThickness?: number; vectorThickness?: number; verticalGridEnabled?: boolean }): void;
+    setValues(values: { axisThickness?: number; vectorThickness?: number; verticalGridEnabled?: boolean; locatorSize?: number }): void;
     onAxisThicknessChanged(cb: (v: number) => void): void;
     onVectorThicknessChanged(cb: (v: number) => void): void;
     onVerticalGridToggled(cb: (enabled: boolean) => void): void;
+    onLocatorSizeChanged(cb: (v: number) => void): void;
   };
 }
 
@@ -85,9 +93,47 @@ export function createSidePanel(titleText: string): SidePanel {
 
     block.appendChild(titleRow);
     block.appendChild(row);
+
+    // Scalar control: slider and numeric input (0-10, default 1)
+    const scalarRow = document.createElement('div');
+    scalarRow.className = 'scalar-row';
+    const scalarLabel = document.createElement('label');
+    scalarLabel.textContent = 'Scalar:';
+    const scalarSlider = document.createElement('input');
+    scalarSlider.type = 'range';
+    scalarSlider.min = '0';
+    scalarSlider.max = '10';
+    scalarSlider.step = '0.1';
+    scalarSlider.value = '1';
+    scalarSlider.className = 'scalar-slider';
+    const scalarInput = document.createElement('input');
+    scalarInput.type = 'number';
+    scalarInput.min = '0';
+    scalarInput.max = '10';
+    scalarInput.step = '0.1';
+    scalarInput.value = '1';
+    scalarInput.className = 'scalar-input';
+    scalarRow.appendChild(scalarLabel);
+    scalarRow.appendChild(scalarSlider);
+    scalarRow.appendChild(scalarInput);
+    block.appendChild(scalarRow);
+
+    // Result display: shows scaled vector
+    const resultRow = document.createElement('div');
+    resultRow.className = 'result-row';
+    const resultLabel = document.createElement('span');
+    resultLabel.textContent = 'Result: ';
+    const resultDisplay = document.createElement('span');
+    resultDisplay.className = 'result-display';
+    resultDisplay.textContent = '[0.00 0.00 0.00]';
+    resultRow.appendChild(resultLabel);
+    resultRow.appendChild(resultDisplay);
+    block.appendChild(resultRow);
+
     content.appendChild(block);
 
     let changeHandler: ((x: number, y: number, z: number) => void) | null = null;
+    let scalarHandler: ((value: number) => void) | null = null;
     let internalUpdate = false;
 
     function readAndEmit() {
@@ -96,6 +142,18 @@ export function createSidePanel(titleText: string): SidePanel {
       const y = parseFloat(inputY.value) || 0;
       const z = parseFloat(inputZ.value) || 0;
       changeHandler(x, y, z);
+      updateResultDisplay();
+    }
+
+    function updateResultDisplay() {
+      const x = parseFloat(inputX.value) || 0;
+      const y = parseFloat(inputY.value) || 0;
+      const z = parseFloat(inputZ.value) || 0;
+      const scalar = parseFloat(scalarSlider.value) || 1;
+      const rx = (x * scalar).toFixed(2);
+      const ry = (y * scalar).toFixed(2);
+      const rz = (z * scalar).toFixed(2);
+      resultDisplay.textContent = `[${rx} ${ry} ${rz}]`;
     }
 
     const hook = (el: HTMLInputElement) => {
@@ -111,6 +169,33 @@ export function createSidePanel(titleText: string): SidePanel {
     hook(inputY);
     hook(inputZ);
 
+    // Sync scalar slider <-> input
+    scalarSlider.addEventListener('input', () => {
+      internalUpdate = true;
+      scalarInput.value = scalarSlider.value;
+      internalUpdate = false;
+      updateResultDisplay();
+      if (scalarHandler) scalarHandler(parseFloat(scalarSlider.value));
+    });
+
+    scalarInput.addEventListener('change', () => {
+      internalUpdate = true;
+      scalarSlider.value = scalarInput.value;
+      internalUpdate = false;
+      updateResultDisplay();
+      if (scalarHandler) scalarHandler(parseFloat(scalarInput.value));
+    });
+
+    scalarInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        internalUpdate = true;
+        scalarSlider.value = scalarInput.value;
+        internalUpdate = false;
+        updateResultDisplay();
+        if (scalarHandler) scalarHandler(parseFloat(scalarInput.value));
+      }
+    });
+
     return {
       root: block,
       setVector(x, y, z) {
@@ -119,9 +204,20 @@ export function createSidePanel(titleText: string): SidePanel {
         inputY.value = y.toFixed(2);
         inputZ.value = z.toFixed(2);
         internalUpdate = false;
+        updateResultDisplay();
       },
       onVectorChanged(handler) {
         changeHandler = handler;
+      },
+      setScalar(value: number) {
+        internalUpdate = true;
+        scalarSlider.value = String(value);
+        scalarInput.value = String(value);
+        internalUpdate = false;
+        updateResultDisplay();
+      },
+      onScalarChanged(handler: (value: number) => void) {
+        scalarHandler = handler;
       },
       setActive(active) {
         block.classList.toggle('active-vector', active);
@@ -176,6 +272,21 @@ export function createSidePanel(titleText: string): SidePanel {
       const vectorThicknessSlider = makeSliderRow('Vector thickness');
       const verticalGridCheckbox = makeCheckboxRow('Show vertical grid');
 
+      // Locator size with expanded range (0.1 to 0.5)
+      const locatorSizeRow = document.createElement('div');
+      locatorSizeRow.className = 'settings-row';
+      const locatorLabel = document.createElement('label');
+      locatorLabel.textContent = 'Locator size';
+      const locatorSizeSlider = document.createElement('input');
+      locatorSizeSlider.type = 'range';
+      locatorSizeSlider.min = '0.1';
+      locatorSizeSlider.max = '0.5';
+      locatorSizeSlider.step = '0.01';
+      locatorSizeSlider.className = 'settings-slider';
+      locatorSizeRow.appendChild(locatorLabel);
+      locatorSizeRow.appendChild(locatorSizeSlider);
+      settings.appendChild(locatorSizeRow);
+
       // append settings to panel content
       uiPanel.appendChild(settings);
 
@@ -188,13 +299,15 @@ export function createSidePanel(titleText: string): SidePanel {
       }
 
       return {
-        setValues(values: { axisThickness?: number; vectorThickness?: number; verticalGridEnabled?: boolean }) {
+        setValues(values: { axisThickness?: number; vectorThickness?: number; verticalGridEnabled?: boolean; locatorSize?: number }) {
           if (values.axisThickness !== undefined) axisThicknessSlider.value = String(values.axisThickness);
           if (values.vectorThickness !== undefined) vectorThicknessSlider.value = String(values.vectorThickness);
+          if (values.locatorSize !== undefined) locatorSizeSlider.value = String(values.locatorSize);
           if (values.verticalGridEnabled !== undefined) verticalGridCheckbox.checked = values.verticalGridEnabled;
         },
         onAxisThicknessChanged(cb: (v: number) => void) { onSliderChange(axisThicknessSlider, cb); },
         onVectorThicknessChanged(cb: (v: number) => void) { onSliderChange(vectorThicknessSlider, cb); },
+        onLocatorSizeChanged(cb: (v: number) => void) { onSliderChange(locatorSizeSlider, cb); },
         onVerticalGridToggled(cb: (enabled: boolean) => void) { onCheckboxChange(verticalGridCheckbox, cb); },
       };
     },
