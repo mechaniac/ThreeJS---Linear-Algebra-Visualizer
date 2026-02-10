@@ -48,17 +48,28 @@ const settingsPanel = (panel as any).addSettingsPanel && (panel as any).addSetti
 // default display params
 const defaultAxisThickness = 0.01;
 const defaultVectorThickness = 0.05;
+const defaultAxisTransparency = 0.5;
+const defaultResultThickness = 0.05;
 const defaultVerticalGridEnabled = false;
 const defaultLocatorSize = 0.2;
 
 // apply defaults
 axes.setThickness(defaultAxisThickness);
+axes.setOpacity(defaultAxisTransparency);
 axes.toggleVerticalGrid(defaultVerticalGridEnabled);
 v1Arrow.setThickness(defaultVectorThickness);
 v2Arrow.setThickness(defaultVectorThickness);
+operationResult.setThickness(defaultResultThickness);
 
 if (settingsPanel) {
-  settingsPanel.setValues({ axisThickness: defaultAxisThickness, vectorThickness: defaultVectorThickness, verticalGridEnabled: defaultVerticalGridEnabled, locatorSize: defaultLocatorSize });
+  settingsPanel.setValues({ 
+    axisThickness: defaultAxisThickness, 
+    vectorThickness: defaultVectorThickness, 
+    axisTransparency: defaultAxisTransparency,
+    resultThickness: defaultResultThickness,
+    verticalGridEnabled: defaultVerticalGridEnabled, 
+    locatorSize: defaultLocatorSize 
+  });
 }
 
 const v1UI = panel.addVectorControl('v₁', v1ColorHex);
@@ -247,9 +258,13 @@ if ((panel as any).addOperationPanel) {
 // wire settings callbacks
 if (settingsPanel) {
   settingsPanel.onAxisThicknessChanged((v: number) => axes.setThickness(v));
+  settingsPanel.onAxisTransparencyChanged((v: number) => axes.setOpacity(v));
   settingsPanel.onVectorThicknessChanged((v: number) => {
     v1Arrow.setThickness(v);
     v2Arrow.setThickness(v);
+  });
+  settingsPanel.onResultThicknessChanged((v: number) => {
+    operationResult.setThickness(v);
   });
   settingsPanel.onVerticalGridToggled((enabled: boolean) => axes.toggleVerticalGrid(enabled));
   settingsPanel.onLocatorSizeChanged((v: number) => {

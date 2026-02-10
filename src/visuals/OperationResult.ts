@@ -11,10 +11,12 @@ export class OperationResult extends THREE.Group {
   private shaft: THREE.Mesh;
   private head: THREE.Mesh;
   private _vector = new THREE.Vector3();
+  private _thickness: number = 0.05;
   private readonly color = 0xffb500; // Fixed result color
 
   constructor(thickness = 0.05) {
     super();
+    this._thickness = thickness;
     this._vector.copy(new THREE.Vector3());
     const len = this._vector.length();
     const tipLen = thickness * 6;
@@ -52,7 +54,7 @@ export class OperationResult extends THREE.Group {
     this.quaternion.copy(quat);
 
     // Update geometry sizes and positions
-    const thickness = 0.05;
+    const thickness = this._thickness;
     const tipLen = thickness * 6;
     const shaftLen = Math.max(len - tipLen, 0.01);
 
@@ -70,7 +72,8 @@ export class OperationResult extends THREE.Group {
     this.updateOrientation();
   }
 
-  setThickness() {
+  setThickness(thickness: number) {
+    this._thickness = thickness;
     this.updateOrientation();
   }
 }

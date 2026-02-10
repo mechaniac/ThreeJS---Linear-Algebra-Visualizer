@@ -25,9 +25,11 @@ export interface SidePanel {
   addOperationPanel?: () => OperationControl;
   // add settings panel at bottom returning controls
   addSettingsPanel?: (settingsTitle?: string) => {
-    setValues(values: { axisThickness?: number; vectorThickness?: number; verticalGridEnabled?: boolean; locatorSize?: number }): void;
+    setValues(values: { axisThickness?: number; vectorThickness?: number; axisTransparency?: number; resultThickness?: number; verticalGridEnabled?: boolean; locatorSize?: number }): void;
     onAxisThicknessChanged(cb: (v: number) => void): void;
     onVectorThicknessChanged(cb: (v: number) => void): void;
+    onAxisTransparencyChanged(cb: (v: number) => void): void;
+    onResultThicknessChanged(cb: (v: number) => void): void;
     onVerticalGridToggled(cb: (enabled: boolean) => void): void;
     onLocatorSizeChanged(cb: (v: number) => void): void;
   };
@@ -310,21 +312,28 @@ export function createSidePanel(titleText: string): SidePanel {
       h.textContent = settingsTitle || 'Settings';
       settings.appendChild(h);
 
-      const makeSliderRow = (labelText: string) => {
+      const makeSliderRow = (labelText: string, min: string = '0.01', max: string = '0.1', step: string = '0.01') => {
         const row = document.createElement('div');
         row.className = 'settings-row';
         const label = document.createElement('label');
         label.textContent = labelText;
         const slider = document.createElement('input');
         slider.type = 'range';
-        slider.min = '0.01';
-        slider.max = '0.1';
-        slider.step = '0.01';
+        slider.min = min;
+        slider.max = max;
+        slider.step = step;
         slider.className = 'settings-slider';
+        const display = document.createElement('span');
+        display.className = 'settings-value-display';
+        display.textContent = min;
+        slider.addEventListener('input', () => {
+          display.textContent = parseFloat(slider.value).toFixed(2);
+        });
         row.appendChild(label);
         row.appendChild(slider);
+        row.appendChild(display);
         settings.appendChild(row);
-        return slider as HTMLInputElement;
+        return { slider: slider as HTMLInputElement, display };
       };
 
       const makeCheckboxRow = (labelText: string) => {
@@ -341,11 +350,13 @@ export function createSidePanel(titleText: string): SidePanel {
         return checkbox as HTMLInputElement;
       };
 
-      const axisThicknessSlider = makeSliderRow('Axis thickness');
-      const vectorThicknessSlider = makeSliderRow('Vector thickness');
+      const axisThicknessSlider = makeSliderRow('Axis thickness').slider;
+      const vectorThicknessSlider = makeSliderRow('Vector thickness').slider;
+      const axisTransparencySlider = makeSliderRow('Axis transparency', '0', '1', '0.01').slider;
+      const resultThicknessSlider = makeSliderRow('Result thickness', '0.01', '0.1', '0.01').slider;
       const verticalGridCheckbox = makeCheckboxRow('Show vertical grid');
 
-      // Locator size with expanded range (0.1 to 0.5)
+      // Locator size with expanded range (0.1 to 1.0)
       const locatorSizeRow = document.createElement('div');
       locatorSizeRow.className = 'settings-row';
       const locatorLabel = document.createElement('label');
@@ -353,11 +364,18 @@ export function createSidePanel(titleText: string): SidePanel {
       const locatorSizeSlider = document.createElement('input');
       locatorSizeSlider.type = 'range';
       locatorSizeSlider.min = '0.1';
-      locatorSizeSlider.max = '0.5';
+      locatorSizeSlider.max = '1.0';
       locatorSizeSlider.step = '0.01';
       locatorSizeSlider.className = 'settings-slider';
+      const locatorSizeDisplay = document.createElement('span');
+      locatorSizeDisplay.className = 'settings-value-display';
+      locatorSizeDisplay.textContent = '0.1';
+      locatorSizeSlider.addEventListener('input', () => {
+        locatorSizeDisplay.textContent = parseFloat(locatorSizeSlider.value).toFixed(2);
+      });
       locatorSizeRow.appendChild(locatorLabel);
       locatorSizeRow.appendChild(locatorSizeSlider);
+      locatorSizeRow.appendChild(locatorSizeDisplay);
       settings.appendChild(locatorSizeRow);
 
       // append settings to panel content
@@ -372,14 +390,18 @@ export function createSidePanel(titleText: string): SidePanel {
       }
 
       return {
-        setValues(values: { axisThickness?: number; vectorThickness?: number; verticalGridEnabled?: boolean; locatorSize?: number }) {
+        setValues(values: { axisThickness?: number; vectorThickness?: number; axisTransparency?: number; resultThickness?: number; verticalGridEnabled?: boolean; locatorSize?: number }) {
           if (values.axisThickness !== undefined) axisThicknessSlider.value = String(values.axisThickness);
           if (values.vectorThickness !== undefined) vectorThicknessSlider.value = String(values.vectorThickness);
+          if (values.axisTransparency !== undefined) axisTransparencySlider.value = String(values.axisTransparency);
+          if (values.resultThickness !== undefined) resultThicknessSlider.value = String(values.resultThickness);
           if (values.locatorSize !== undefined) locatorSizeSlider.value = String(values.locatorSize);
           if (values.verticalGridEnabled !== undefined) verticalGridCheckbox.checked = values.verticalGridEnabled;
         },
         onAxisThicknessChanged(cb: (v: number) => void) { onSliderChange(axisThicknessSlider, cb); },
         onVectorThicknessChanged(cb: (v: number) => void) { onSliderChange(vectorThicknessSlider, cb); },
+        onAxisTransparencyChanged(cb: (v: number) => void) { onSliderChange(axisTransparencySlider, cb); },
+        onResultThicknessChanged(cb: (v: number) => void) { onSliderChange(resultThicknessSlider, cb); },
         onLocatorSizeChanged(cb: (v: number) => void) { onSliderChange(locatorSizeSlider, cb); },
         onVerticalGridToggled(cb: (enabled: boolean) => void) { onCheckboxChange(verticalGridCheckbox, cb); },
       };

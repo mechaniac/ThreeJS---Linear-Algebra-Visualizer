@@ -3,6 +3,7 @@ import * as THREE from 'three';
 export class AxisVisualizer extends THREE.Group {
   private axisLength: number;
   private axisThickness: number;
+  private axisOpacity: number = 1;
   private axisColors = [0xdd4522, 0x32d83e, 0x367ec6];
   private axisGroups: THREE.Group[] = [];
   private verticalGrids: THREE.Object3D[] = [];
@@ -97,17 +98,20 @@ export class AxisVisualizer extends THREE.Group {
       this.createAxis(new THREE.Vector3(0, 0, 1), this.axisLength, this.axisThickness, this.axisColors[2]),
     ];
     for (const g of this.axisGroups) this.add(g);
+    // Reapply opacity after recreation
+    if (this.axisOpacity < 1) {
+      this.setOpacity(this.axisOpacity);
+    }
   }
 
   setOpacity(opacity: number) {
+    this.axisOpacity = opacity;
     for (const g of this.axisGroups) {
       g.traverse((obj) => {
         if ((obj as THREE.Mesh).material) {
           const m = (obj as THREE.Mesh).material as THREE.Material & { opacity?: number; transparent?: boolean };
-          if ('opacity' in m) {
-            m.transparent = opacity < 1;
-            m.opacity = opacity;
-          }
+          m.transparent = opacity < 1;
+          m.opacity = opacity;
         }
       });
     }
