@@ -140,6 +140,7 @@ const Operation = {
   None: 0,
   Addition: 1,
   CrossProduct: 2,
+  DotProduct: 3,
 } as const;
 type Operation = typeof Operation[keyof typeof Operation];
 
@@ -153,6 +154,10 @@ function computeOperationResult(op: Operation, v1: VectorState, v2: VectorState)
       return v1Scaled.clone().add(v2Scaled);
     case Operation.CrossProduct:
       return v1Scaled.clone().cross(v2Scaled);
+    case Operation.DotProduct:
+      // Dot product returns a scalar; represent as vector [result, 0, 0]
+      const dotResult = v1Scaled.dot(v2Scaled);
+      return new THREE.Vector3(dotResult, 0, 0);
     case Operation.None:
     default:
       return new THREE.Vector3();

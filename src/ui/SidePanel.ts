@@ -255,6 +255,7 @@ export function createSidePanel(titleText: string): SidePanel {
         { value: '0', text: 'None' },
         { value: '1', text: 'Addition' },
         { value: '2', text: 'Cross Product' },
+        { value: '3', text: 'Dot Product' },
       ];
       
       for (const op of operations) {
