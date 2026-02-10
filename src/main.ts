@@ -14,7 +14,7 @@ const env = createThreeEnv();
 const { scene, controls } = env;
 
 // axis
-const axes = new AxisVisualizer(4, 0.04);
+const axes = new AxisVisualizer(5, 0.04);
 scene.add(axes);
 
 // colors
@@ -41,17 +41,17 @@ const settingsPanel = (panel as any).addSettingsPanel && (panel as any).addSetti
 
 // default display params
 const defaultAxisThickness = 0.03;
-const defaultAxisOpacity = 1.0;
 const defaultVectorThickness = 0.05;
+const defaultVerticalGridEnabled = false;
 
 // apply defaults
 axes.setThickness(defaultAxisThickness);
-axes.setOpacity(defaultAxisOpacity);
+axes.toggleVerticalGrid(defaultVerticalGridEnabled);
 v1Arrow.setThickness(defaultVectorThickness);
 v2Arrow.setThickness(defaultVectorThickness);
 
 if (settingsPanel) {
-  settingsPanel.setValues({ axisThickness: defaultAxisThickness, axisOpacity: defaultAxisOpacity, vectorThickness: defaultVectorThickness });
+  settingsPanel.setValues({ axisThickness: defaultAxisThickness, vectorThickness: defaultVectorThickness, verticalGridEnabled: defaultVerticalGridEnabled });
 }
 
 const v1UI = panel.addVectorControl('v₁', v1ColorHex);
@@ -123,11 +123,11 @@ installVectorInteractionController(
 // wire settings callbacks
 if (settingsPanel) {
   settingsPanel.onAxisThicknessChanged((v: number) => axes.setThickness(v));
-  settingsPanel.onAxisOpacityChanged((v: number) => axes.setOpacity(Math.max(0, Math.min(1, v))));
   settingsPanel.onVectorThicknessChanged((v: number) => {
     v1Arrow.setThickness(v);
     v2Arrow.setThickness(v);
   });
+  settingsPanel.onVerticalGridToggled((enabled: boolean) => axes.toggleVerticalGrid(enabled));
 }
 
 // loop

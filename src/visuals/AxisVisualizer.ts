@@ -5,6 +5,7 @@ export class AxisVisualizer extends THREE.Group {
   private axisThickness: number;
   private axisColors = [0xdd4522, 0x32d83e, 0x367ec6];
   private axisGroups: THREE.Group[] = [];
+  private verticalGrids: THREE.Object3D[] = [];
 
   constructor(axisLength = 5, axisThickness = 0.03) {
     super();
@@ -24,6 +25,23 @@ export class AxisVisualizer extends THREE.Group {
     ];
 
     for (const g of this.axisGroups) this.add(g);
+
+    // create vertical grids (initially hidden)
+    // XY plane grid: rotate 90° around X axis to make it vertical (facing +Z)
+    const xyGrid = new THREE.GridHelper(10, 10, 0x444444, 0x222222);
+    xyGrid.rotation.x = Math.PI / 2;
+    xyGrid.position.z = 0;
+    xyGrid.visible = false;
+    this.verticalGrids.push(xyGrid);
+    this.add(xyGrid);
+
+    // ZY plane grid: rotate 90° around Z axis to make it vertical (facing +X)
+    const zyGrid = new THREE.GridHelper(10, 10, 0x444444, 0x222222);
+    zyGrid.rotation.z = Math.PI / 2;
+    zyGrid.position.x = 0;
+    zyGrid.visible = false;
+    this.verticalGrids.push(zyGrid);
+    this.add(zyGrid);
   }
 
   private createAxis(
@@ -92,6 +110,12 @@ export class AxisVisualizer extends THREE.Group {
           }
         }
       });
+    }
+  }
+
+  toggleVerticalGrid(enabled: boolean) {
+    for (const grid of this.verticalGrids) {
+      grid.visible = enabled;
     }
   }
 }

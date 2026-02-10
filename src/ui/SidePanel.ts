@@ -10,10 +10,10 @@ export interface SidePanel {
   addVectorControl(label: string, colorHex: string): VectorControl;
   // add settings panel at bottom returning controls
   addSettingsPanel?: (settingsTitle?: string) => {
-    setValues(values: { axisThickness?: number; axisOpacity?: number; vectorThickness?: number }): void;
+    setValues(values: { axisThickness?: number; vectorThickness?: number; verticalGridEnabled?: boolean }): void;
     onAxisThicknessChanged(cb: (v: number) => void): void;
-    onAxisOpacityChanged(cb: (v: number) => void): void;
     onVectorThicknessChanged(cb: (v: number) => void): void;
+    onVerticalGridToggled(cb: (enabled: boolean) => void): void;
   };
 }
 
@@ -141,42 +141,61 @@ export function createSidePanel(titleText: string): SidePanel {
       h.textContent = settingsTitle || 'Settings';
       settings.appendChild(h);
 
-      const makeRow = (labelText: string) => {
+      const makeSliderRow = (labelText: string) => {
         const row = document.createElement('div');
         row.className = 'settings-row';
         const label = document.createElement('label');
         label.textContent = labelText;
-        const input = document.createElement('input');
-        input.type = 'number';
-        input.step = '0.01';
-        input.className = 'settings-input';
+        const slider = document.createElement('input');
+        slider.type = 'range';
+        slider.min = '0.01';
+        slider.max = '0.1';
+        slider.step = '0.01';
+        slider.className = 'settings-slider';
         row.appendChild(label);
-        row.appendChild(input);
+        row.appendChild(slider);
         settings.appendChild(row);
-        return input as HTMLInputElement;
+        return slider as HTMLInputElement;
       };
 
-      const axisThicknessInp = makeRow('Axis thickness');
-      const axisOpacityInp = makeRow('Axis opacity (0-1)');
-      const vectorThicknessInp = makeRow('Vector thickness');
+      const makeCheckboxRow = (labelText: string) => {
+        const row = document.createElement('div');
+        row.className = 'settings-row';
+        const label = document.createElement('label');
+        label.textContent = labelText;
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.className = 'settings-checkbox';
+        row.appendChild(label);
+        row.appendChild(checkbox);
+        settings.appendChild(row);
+        return checkbox as HTMLInputElement;
+      };
+
+      const axisThicknessSlider = makeSliderRow('Axis thickness');
+      const vectorThicknessSlider = makeSliderRow('Vector thickness');
+      const verticalGridCheckbox = makeCheckboxRow('Show vertical grid');
 
       // append settings to panel content
       uiPanel.appendChild(settings);
 
-      function onChange(input: HTMLInputElement, handler: (v: number) => void) {
-        input.addEventListener('change', () => handler(parseFloat(input.value) || 0));
-        input.addEventListener('keydown', (e) => { if (e.key === 'Enter') handler(parseFloat(input.value) || 0); });
+      function onSliderChange(slider: HTMLInputElement, handler: (v: number) => void) {
+        slider.addEventListener('input', () => handler(parseFloat(slider.value) || 0.01));
+      }
+
+      function onCheckboxChange(checkbox: HTMLInputElement, handler: (v: boolean) => void) {
+        checkbox.addEventListener('change', () => handler(checkbox.checked));
       }
 
       return {
-        setValues(values: { axisThickness?: number; axisOpacity?: number; vectorThickness?: number }) {
-          if (values.axisThickness !== undefined) axisThicknessInp.value = String(values.axisThickness);
-          if (values.axisOpacity !== undefined) axisOpacityInp.value = String(values.axisOpacity);
-          if (values.vectorThickness !== undefined) vectorThicknessInp.value = String(values.vectorThickness);
+        setValues(values: { axisThickness?: number; vectorThickness?: number; verticalGridEnabled?: boolean }) {
+          if (values.axisThickness !== undefined) axisThicknessSlider.value = String(values.axisThickness);
+          if (values.vectorThickness !== undefined) vectorThicknessSlider.value = String(values.vectorThickness);
+          if (values.verticalGridEnabled !== undefined) verticalGridCheckbox.checked = values.verticalGridEnabled;
         },
-        onAxisThicknessChanged(cb: (v: number) => void) { onChange(axisThicknessInp, cb); },
-        onAxisOpacityChanged(cb: (v: number) => void) { onChange(axisOpacityInp, cb); },
-        onVectorThicknessChanged(cb: (v: number) => void) { onChange(vectorThicknessInp, cb); },
+        onAxisThicknessChanged(cb: (v: number) => void) { onSliderChange(axisThicknessSlider, cb); },
+        onVectorThicknessChanged(cb: (v: number) => void) { onSliderChange(vectorThicknessSlider, cb); },
+        onVerticalGridToggled(cb: (enabled: boolean) => void) { onCheckboxChange(verticalGridCheckbox, cb); },
       };
     },
   };
