@@ -18,6 +18,7 @@ export interface OperationControl {
   setOperation(op: number): void;
   onOperationChanged(handler: (op: number) => void): void;
   setResult(x: number, y: number, z: number): void;
+  setScalarResult(value: number): void;
 }
 
 export interface SidePanel {
@@ -300,6 +301,9 @@ export function createSidePanel(titleText: string): SidePanel {
           const ry = y.toFixed(2);
           const rz = z.toFixed(2);
           resultDisplay.textContent = `[${rx} ${ry} ${rz}]`;
+        },
+        setScalarResult(value: number) {
+          resultDisplay.textContent = value.toFixed(2);
         },
       };
     },

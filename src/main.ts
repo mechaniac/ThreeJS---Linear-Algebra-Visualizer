@@ -145,7 +145,8 @@ const Operation = {
 type Operation = typeof Operation[keyof typeof Operation];
 
 // Helper: compute operation result using final (scaled) vectors
-function computeOperationResult(op: Operation, v1: VectorState, v2: VectorState): THREE.Vector3 {
+// Returns a Vector3 for vector operations, or null for scalar operations (dot product)
+function computeOperationResult(op: Operation, v1: VectorState, v2: VectorState): THREE.Vector3 | null {
   const v1Scaled = v1.inputVector.clone().multiplyScalar(v1.scalar);
   const v2Scaled = v2.inputVector.clone().multiplyScalar(v2.scalar);
 
@@ -155,13 +156,18 @@ function computeOperationResult(op: Operation, v1: VectorState, v2: VectorState)
     case Operation.CrossProduct:
       return v1Scaled.clone().cross(v2Scaled);
     case Operation.DotProduct:
-      // Dot product returns a scalar; represent as vector [result, 0, 0]
-      const dotResult = v1Scaled.dot(v2Scaled);
-      return new THREE.Vector3(dotResult, 0, 0);
+      return null; // scalar result handled separately
     case Operation.None:
     default:
       return new THREE.Vector3();
   }
+}
+
+// Helper: compute dot product scalar
+function computeDotProduct(v1: VectorState, v2: VectorState): number {
+  const v1Scaled = v1.inputVector.clone().multiplyScalar(v1.scalar);
+  const v2Scaled = v2.inputVector.clone().multiplyScalar(v2.scalar);
+  return v1Scaled.dot(v2Scaled);
 }
 
 // Operation state
@@ -173,12 +179,23 @@ function updateOperation() {
   const v2 = vectors.find((v) => v.id === 2);
   if (!v1 || !v2) return;
 
-  const result = computeOperationResult(currentOperation, v1, v2);
-  operationResult.setFromVector(result);
-
-  // Update UI
-  if (opPanel) {
-    opPanel.setResult(result.x, result.y, result.z);
+  if (currentOperation === Operation.DotProduct) {
+    // Dot product is a scalar — show as arrow along Y axis with length = dot value
+    const scalar = computeDotProduct(v1, v2);
+    operationResult.setFromVector(new THREE.Vector3(0, scalar, 0));
+    if (opPanel) {
+      opPanel.setScalarResult(scalar);
+    }
+  } else {
+    const result = computeOperationResult(currentOperation, v1, v2);
+    if (result) {
+      operationResult.setFromVector(result);
+    } else {
+      operationResult.visible = false;
+    }
+    if (opPanel) {
+      opPanel.setResult(result?.x ?? 0, result?.y ?? 0, result?.z ?? 0);
+    }
   }
 }
 
