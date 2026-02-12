@@ -6,7 +6,9 @@ import { AxisVisualizer } from './visuals/AxisVisualizer';
 import { VectorArrow } from './visuals/VectorArrow';
 import { VectorLocator } from './visuals/VectorLocator';
 import { OperationResult } from './visuals/OperationResult';
+import { Parallelogram } from './visuals/Parallelogram';
 import { createSidePanel } from './ui/SidePanel';
+import { createOperationOverlay } from './ui/OperationOverlay';
 import { installVectorInteractionController } from './interactions/VectorInteractionController';
 import type { VectorEntry } from './interactions/VectorInteractionController';
 
@@ -35,9 +37,26 @@ const v2Arrow = new VectorArrow(v2Initial, v2ColorNum);
 scene.add(v1Arrow);
 scene.add(v2Arrow);
 
+// Ghost v₂ arrow for addition tip-to-tail visualization
+const v2Ghost = new VectorArrow(v2Initial, v2ColorNum);
+v2Ghost.setOpacity(0.45);
+v2Ghost.visible = false;
+scene.add(v2Ghost);
+
 // Operation result display
 const operationResult = new OperationResult(0.05);
 scene.add(operationResult);
+
+// Cross product parallelogram visualization
+const crossParallelogram = new Parallelogram(0xffb500, 0.2);
+scene.add(crossParallelogram);
+
+// Educational overlay describing the active operation
+const opOverlay = createOperationOverlay({
+  v1: v1ColorHex,
+  v2: v2ColorHex,
+  result: '#ffb500',
+});
 
 // UI
 const panel = createSidePanel('Vectors') as SP;
@@ -179,10 +198,16 @@ function updateOperation() {
   const v2 = vectors.find((v) => v.id === 2);
   if (!v1 || !v2) return;
 
+  // Compute scaled vectors once for reuse
+  const v1Scaled = v1.inputVector.clone().multiplyScalar(v1.scalar);
+  const v2Scaled = v2.inputVector.clone().multiplyScalar(v2.scalar);
+
   if (currentOperation === Operation.DotProduct) {
     // Dot product is a scalar — show as arrow along Y axis with length = dot value
     const scalar = computeDotProduct(v1, v2);
     operationResult.setFromVector(new THREE.Vector3(0, scalar, 0));
+    crossParallelogram.visible = false;
+    v2Ghost.visible = false;
     if (opPanel) {
       opPanel.setScalarResult(scalar);
     }
@@ -193,6 +218,23 @@ function updateOperation() {
     } else {
       operationResult.visible = false;
     }
+
+    // Show parallelogram only for cross product
+    if (currentOperation === Operation.CrossProduct) {
+      crossParallelogram.setVectors(v1Scaled, v2Scaled);
+    } else {
+      crossParallelogram.visible = false;
+    }
+
+    // Show ghost v₂ at tip of v₁ for addition (tip-to-tail)
+    if (currentOperation === Operation.Addition) {
+      v2Ghost.position.copy(v1Scaled);
+      v2Ghost.setFromVector(v2Scaled);
+      v2Ghost.visible = true;
+    } else {
+      v2Ghost.visible = false;
+    }
+
     if (opPanel) {
       opPanel.setResult(result?.x ?? 0, result?.y ?? 0, result?.z ?? 0);
     }
@@ -273,6 +315,7 @@ if ((panel as any).addOperationPanel) {
     opPanel.onOperationChanged((op: number) => {
       currentOperation = op as Operation;
       updateOperation();
+      opOverlay.setOperation(op);
     });
   }
 }
@@ -284,6 +327,7 @@ if (settingsPanel) {
   settingsPanel.onVectorThicknessChanged((v: number) => {
     v1Arrow.setThickness(v);
     v2Arrow.setThickness(v);
+    v2Ghost.setThickness(v);
   });
   settingsPanel.onResultThicknessChanged((v: number) => {
     operationResult.setThickness(v);
